@@ -6,17 +6,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RequestVerticle extends AbstractVerticle {
-  public static final String ADDRESS = RequestVerticle.class.getName();
+  public static final String ADDRESS = "message.address";
   private static final Logger LOGGER = LoggerFactory.getLogger(RequestVerticle.class);
 
   @Override
   public void start(Promise<Void> startPromise) throws Exception {
     startPromise.complete();
-    var eventBus = vertx.eventBus();
     String message = "Hello Vert.x";
     LOGGER.debug("Sending: {}", message);
-    eventBus.<String>request(ADDRESS, message, reply -> {
-      LOGGER.debug("Response: {}", reply.result().body());
-    });
+    vertx.setPeriodic(1000, id ->
+      vertx.eventBus().<String>request(ADDRESS, message, reply ->
+      LOGGER.debug("Response: {}", reply.result().body())));
   }
 }
