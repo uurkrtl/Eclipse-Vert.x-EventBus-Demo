@@ -65,7 +65,7 @@ public class ResponseVerticle extends AbstractVerticle{
 }
 ```
 
-### Creating a EventBus for Response
+### Creating a Unit Test
 ```java
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
