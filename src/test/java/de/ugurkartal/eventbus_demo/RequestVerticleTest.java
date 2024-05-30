@@ -14,7 +14,7 @@ class RequestVerticleTest {
   @Test
   void SendMessageTest (Vertx vertx, VertxTestContext testContext) {
     vertx.deployVerticle(new ResponseVerticle(), testContext.succeeding(id -> {
-      vertx.eventBus().consumer("message.address", message -> {
+      vertx.eventBus().consumer(RequestVerticle.ADDRESS, message -> {
         assertEquals("Hello Vert.x", message.body());
         testContext.completeNow();
       });

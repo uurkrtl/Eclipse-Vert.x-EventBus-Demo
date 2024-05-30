@@ -7,6 +7,7 @@ Vert.x EventBus is a powerful and flexible messaging system provided by the Vert
 * How to deploy a Verticle
 * How to create EventBus for Request
 * How to create EventBus for Response
+* How to use vertx-unit for tests
 * What are the other Types of EventBus Communication
 
 ### Request/Response Communication
@@ -14,6 +15,8 @@ This pattern allows a sender to send a message and expect a reply. It is useful 
 
 ### Deploy a Verticle
 ```java
+import io.vertx.core.Vertx;
+
 public class Main {
   public static void main(String[] args) {
     var vertx = Vertx.vertx();
@@ -25,19 +28,23 @@ public class Main {
 
 ### Creating a EventBus for Request
 ```java
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RequestVerticle extends AbstractVerticle {
-  public static final String ADDRESS = RequestVerticle.class.getName();
+  public static final String ADDRESS = "message.address";
   private static final Logger LOGGER = LoggerFactory.getLogger(RequestVerticle.class);
 
   @Override
   public void start(Promise<Void> startPromise) throws Exception {
     startPromise.complete();
-    var eventBus = vertx.eventBus();
     String message = "Hello Vert.x";
     LOGGER.debug("Sending: {}", message);
-    eventBus.<String>request(ADDRESS, message, reply -> {
-      LOGGER.debug("Response: {}", reply.result().body());
-    });
+    vertx.setPeriodic(1000, id ->
+      vertx.eventBus().<String>request(ADDRESS, message, reply ->
+        LOGGER.debug("Response: {}", reply.result().body())));
   }
 }
 ```
@@ -57,6 +64,35 @@ public class ResponseVerticle extends AbstractVerticle{
   }
 }
 ```
+
+### Creating a EventBus for Response
+```java
+import io.vertx.core.Vertx;
+import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@ExtendWith(VertxExtension.class)
+class RequestVerticleTest {
+
+  @Test
+  void SendMessageTest (Vertx vertx, VertxTestContext testContext) {
+    vertx.deployVerticle(new ResponseVerticle(), testContext.succeeding(id -> {
+      vertx.eventBus().consumer(RequestVerticle.ADDRESS, message -> {
+        assertEquals("Hello Vert.x", message.body());
+        testContext.completeNow();
+      });
+      vertx.deployVerticle(new RequestVerticle(), testContext.succeeding(id2 -> {
+        // Waiting for message to be sent
+      }));
+    }));
+  }
+}
+```
+
 ## Other Types of EventBus Communication
 ### Point-to-Point Communication
 In this pattern, a message is sent from one sender to one receiver. It is useful for direct messaging scenarios where a specific component needs to handle the message.
